@@ -1,9 +1,7 @@
 import json
 from datetime import datetime
-
 import boto3
 import psycopg2
-
 from m_logger import get_logger
 
 logger = get_logger(__name__)
