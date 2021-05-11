@@ -2,9 +2,6 @@ import json
 from datetime import datetime
 import boto3
 import psycopg2
-from m_logger import get_logger
-
-logger = get_logger(__name__)
 
 REGION = "us-east-1"
 
@@ -40,19 +37,9 @@ def load_data(df_transformed):
         sm = boto3.client("secretsmanager", REGION)
         get_secret_value_response = sm.get_secret_value(SecretId="postgres-creds")
         secret_string = get_secret_value_response['SecretString']
-    except Exception as error:
-        logger.error("Error retrieving db credentials from Secrets Manager - {}".format(error))
-        raise
+        if len(secret_string) == 0:
+            raise ValueError("Error db credentials from Secrets Manager: empty SecretString")
 
-    if len(secret_string) == 0:
-        logger.error("Error db credentials from Secrets Manager: empty SecretString")
-        raise
-
-    conn = None
-    row = None
-    rows = 0
-
-    try:
         secrets = json.loads(secret_string)
         conn = psycopg2.connect(
             host=secrets["host"],
@@ -78,6 +65,7 @@ def load_data(df_transformed):
             df_transformed = df_transformed[df_transformed["date"] > latest]
 
         # Inserting each row
+        rows = 0
         for row in df_transformed.itertuples(index=False):
             cdt = datetime.now()
             cur.execute(SQL_INSERT_STAT, (dict(stat_date=row.date,
@@ -98,8 +86,8 @@ def load_data(df_transformed):
 
         # close communication with the database
         cur.close()
-    except Exception as error:
-        logger.exception("Load Data Error - {}".format(error))
+    except Exception:
+        raise
     finally:
         if conn is not None:
             conn.close()

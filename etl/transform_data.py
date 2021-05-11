@@ -1,34 +1,27 @@
 import pandas as pd
-from m_logger import get_logger
-
-logger = get_logger(__name__)
 
 
 def transform_data(ny_data, jh_data):
-    try:
-        validate_data(ny_data, jh_data)
+    validate_data(ny_data, jh_data)
 
-        # apply US only filter to Johns Hopkins data
-        jh_data = jh_data[jh_data['Country/Region'] == 'US'][['Date', 'Recovered']]
-        jh_data['Date'] = pd.to_datetime(jh_data['Date'], format='%Y-%m-%d')
-        jh_data['Recovered'] = jh_data['Recovered'].astype('int64')
+    # apply US only filter to Johns Hopkins data
+    jh_data = jh_data[jh_data['Country/Region'] == 'US'][['Date', 'Recovered']]
+    jh_data['Date'] = pd.to_datetime(jh_data['Date'], format='%Y-%m-%d')
+    jh_data['Recovered'] = jh_data['Recovered'].astype('int64')
 
-        ny_data['date'] = pd.to_datetime(ny_data['date'], format='%Y-%m-%d')
-        ny_data['cases'] = ny_data['cases'].astype('int64')
-        ny_data['deaths'] = ny_data['deaths'].astype('int64')
+    ny_data['date'] = pd.to_datetime(ny_data['date'], format='%Y-%m-%d')
+    ny_data['cases'] = ny_data['cases'].astype('int64')
+    ny_data['deaths'] = ny_data['deaths'].astype('int64')
 
-        # merge the data frames on date/Date
-        df_transformed = pd.merge(ny_data, jh_data, left_on="date", right_on="Date")
+    # merge the data frames on date/Date
+    df_transformed = pd.merge(ny_data, jh_data, left_on="date", right_on="Date")
 
-        # drop the unused columns
-        df_transformed.drop(columns=["Date"], inplace=True)
+    # drop the unused columns
+    df_transformed.drop(columns=["Date"], inplace=True)
 
-        # rename columns
-        df_transformed.columns = ["date", "cases", "deaths", "recoveries"]
-        return df_transformed
-    except Exception as error:
-        logger.error("Error transforming data: - {}".format(error))
-        raise
+    # rename columns
+    df_transformed.columns = ["date", "cases", "deaths", "recoveries"]
+    return df_transformed
 
 
 def validate_data(ny_data, jh_data):
