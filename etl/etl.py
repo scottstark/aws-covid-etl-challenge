@@ -1,6 +1,6 @@
-import logging
 import json
 import boto3
+import logging
 from notification import send_notification
 from transform_data import transform_data
 from extract_data import extract_data
@@ -10,15 +10,16 @@ REGION = "us-east-1"
 
 
 def lambda_handler(event, context):
+    logger = get_logger(__name__)
+
     try:
-        logger = get_logger(__name__)
         logger.info("COVID ETL process begin")
 
         ny_url, jh_url = get_param_store_val("nytimes-covid-url", "johns-hopkins-covid-url")
 
         logger.info("Extracting data")
-        ny_data = extract_data(ny_url)
-        jh_data = extract_data(jh_url)
+        ny_data = extract_data(ny_url, "NYT")
+        jh_data = extract_data(jh_url, "JH")
 
         logger.info("Transforming data")
         df_transformed = transform_data(ny_data, jh_data)
@@ -27,7 +28,7 @@ def lambda_handler(event, context):
         rows, row = load_data(df_transformed)
 
         msg = "Hi there! COVID ETL process completed with " + str(f"{rows:,}") \
-              + " rows processed. \n\n In the US, as of " + row[0].strftime("%m/%d/%Y") \
+              + " row(s) added. \n\nIn the US, as of " + row[0].strftime("%m/%d/%Y") \
               + " there have been " + str(f"{row[1]:,}") + " cases, " + str(f"{row[2]:,}") \
               + " deaths and " + str(f"{row[3]:,}") + " recoveries."
 
@@ -57,7 +58,7 @@ def get_param_store_val(param1, param2):
     parameter = ssm.get_parameter(Name=param2, WithDecryption=False)
     val2 = (parameter['Parameter']['Value'])
     if len(val1) == 0 or len(val2) == 0:
-        raise ValueError("An error occurred parameter empty when calling the GetParameter operation")
+        raise ValueError("An error occurred: Parameter empty when calling the GetParameter operation")
     return val1, val2
 
 

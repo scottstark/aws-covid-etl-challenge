@@ -33,6 +33,7 @@ SQL_SELECT_LATEST = """SELECT stat_date, cases, deaths, recoveries FROM daily_co
 
 
 def load_data(df_transformed):
+    conn = None
     try:
         sm = boto3.client("secretsmanager", REGION)
         get_secret_value_response = sm.get_secret_value(SecretId="postgres-creds")
